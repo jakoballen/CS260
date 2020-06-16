@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Class-Path: /Users/jakoballen/Desktop/CS260/Assignment03/src/HumResour
+ ceGUI.java
+Main-Class: HumResourceGUI
+

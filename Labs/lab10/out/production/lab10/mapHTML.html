@@ -1,0 +1,91 @@
+<html>
+<head><title>OpenLayers Marker Popups</title></head>
+<body>
+<div id="mapdiv"></div>
+<script src="http://openlayers.org/api/OpenLayers.js"></script>
+<!-- Backup Source: <script src="https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.11/lib/OpenLayers.js"></script> -->
+<script>
+    mapFeatures = [];
+    prevPickedFeature = null;
+    map = new OpenLayers.Map("mapdiv");
+    map.addLayer(new OpenLayers.Layer.OSM());
+
+    epsg4326 =  new OpenLayers.Projection("EPSG:4326"); //WGS 1984 projection
+    projectTo = map.getProjectionObject(); //The map projection (Spherical Mercator)
+
+    /* Center map at Eau Claire, change this to center elsewhere */
+    var lonLat = new OpenLayers.LonLat(-91.5, 44.8305).transform(epsg4326, projectTo);
+
+    /* default map zoom */
+    var zoom=11;
+    map.setCenter(lonLat, zoom);
+
+    var vectorLayer = new OpenLayers.Layer.Vector("Overlay");
+    map.addLayer(vectorLayer);
+
+
+    //Add a selector control to the vectorLayer with popup functions
+    var controls = {
+        selector: new OpenLayers.Control.SelectFeature(vectorLayer, { onSelect: createPopup, onUnselect: destroyPopup})
+    };
+
+    function addMapPoint(id, lat, lon, description, pngIcon){
+        var point = new OpenLayers.Geometry.Point(lon, lat).transform(epsg4326, projectTo);
+        var feature = new OpenLayers.Feature.Vector(point, {description: description, id: id}, {externalGraphic: pngIcon, graphicHeight: 32, graphicWidth: 32, graphicYOffset: -32});
+        mapFeatures[id] = feature;
+        vectorLayer.addFeatures(feature);
+    }
+
+    function clearMapPoints(){
+        for(i = 0; i <= mapFeatures.length; ++i){
+            destroyPopup(mapFeatures[i]);
+        }
+        vectorLayer.removeAllFeatures();
+        mapFeatures.length = 0;
+    }
+
+    function selectMapPoint(id){
+        if(id >= 0 && id < mapFeatures.length){
+            createPopup(mapFeatures[id]);
+        } else {
+            createPopup(null); //will clear out any selected pop up
+        }
+    }
+
+    function createPopup(feature) {
+        destroyPopup(prevPickedFeature);
+        prevPickedFeature = feature;
+
+        if(feature != null) {
+            feature.popup = new OpenLayers.Popup.FramedCloud("pop",
+                feature.geometry.getBounds().getCenterLonLat(),
+                null,
+                '<div class="markerContent">' + feature.attributes.description + '</div>',
+                null,
+                true,
+                function () {
+                    controls['selector'].unselectAll();
+                    destroyPopup(feature);
+                }
+            );
+            //feature.popup.closeOnMove = true;
+            map.addPopup(feature.popup);
+            app.setSelectedItem(feature.attributes.id); //call back to java
+        }
+    }
+
+    function destroyPopup(feature) {
+        if(feature != null) { //safety checks!
+            if (feature.popup != null) {
+                feature.popup.destroy();
+                feature.popup = null;
+            }
+        }
+    }
+
+    map.addControl(controls['selector']);
+    controls['selector'].activate();
+
+</script>
+
+</body></html>
